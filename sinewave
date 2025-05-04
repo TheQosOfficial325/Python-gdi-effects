@@ -1,0 +1,51 @@
+import ctypes
+import math
+import time
+
+# Load Windows DLLs
+user32 = ctypes.WinDLL("user32")
+gdi32 = ctypes.WinDLL("gdi32")
+
+# Constants
+SRCCOPY = 0x00CC0020
+SM_CXSCREEN = 0
+SM_CYSCREEN = 1
+
+# Get screen size
+x = user32.GetSystemMetrics(SM_CXSCREEN)
+y = user32.GetSystemMetrics(SM_CYSCREEN)
+
+# Get device contexts
+hdc = user32.GetDC(None)
+mdc = gdi32.CreateCompatibleDC(hdc)
+bmp = gdi32.CreateCompatibleBitmap(hdc, x, y)
+gdi32.SelectObject(mdc, bmp)
+
+# Main loop
+angle = 0.0
+try:
+    while True:
+        # Capture current screen
+        gdi32.BitBlt(mdc, 0, 0, x, y, hdc, 0, 0, SRCCOPY)
+
+        # Horizontal wave (per row)
+        for i in range(x + y):
+            offset = int(math.sin(angle) * 40)
+            gdi32.BitBlt(hdc, 0, i, x, 1, mdc, offset, i, SRCCOPY)
+            angle += math.pi / 80
+        time.sleep(0.01)
+
+        # Vertical wave (per column)
+        for i in range(x + y):
+            offset = int(math.sin(angle) * 40)
+            gdi32.BitBlt(hdc, i, 0, 1, y, mdc, i, offset, SRCCOPY)
+            angle += math.pi / 80
+        time.sleep(0.01)
+
+except KeyboardInterrupt:
+    pass
+
+# Cleanup
+gdi32.DeleteObject(bmp)
+gdi32.DeleteDC(mdc)
+user32.ReleaseDC(None, hdc)
